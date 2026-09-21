@@ -33,16 +33,22 @@ public class DailyController {
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size
     ) {
+//        return ResponseEntity.status(HttpStatus.OK)
+//                .body(ApiResponse.ok(dailyService.findAll(page, size)));
+
         return ResponseEntity.status(HttpStatus.OK)
-                .body(ApiResponse.ok(dailyService.findAll(page, size)));
+                .body(ApiResponse.ok(dailyService.findAllWithQuerydsl(page, size)));
     }
 
     @GetMapping("/{id}")
     public ResponseEntity<ApiResponse<DailyDetailResponse>> findOne(
             @PathVariable long id
     ) {
+//        return ResponseEntity.status(HttpStatus.OK)
+//                .body(ApiResponse.ok(dailyService.findOne(id)));
+
         return ResponseEntity.status(HttpStatus.OK)
-                .body(ApiResponse.ok(dailyService.findOne(id)));
+                .body(ApiResponse.ok(dailyService.findOneWithQuerydsl(id)));
     }
 
     @PatchMapping("/{id}")

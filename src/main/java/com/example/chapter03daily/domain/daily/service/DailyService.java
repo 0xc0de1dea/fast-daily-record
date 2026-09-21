@@ -72,6 +72,16 @@ public class DailyService {
     }
 
     @Transactional(readOnly = true)
+    public Page<DailyDto.Response> findAllWithQuerydsl(int page, int size) {
+        Pageable pageable = PageRequest.of(
+                page,
+                size
+        );
+
+        return dailyRepository.findAllWithQuerydsl(pageable);
+    }
+
+    @Transactional(readOnly = true)
     public DailyDetailResponse findOne(long id) {
         Daily saved = dailyRepository.findById(id)
                 .orElseThrow(
@@ -79,6 +89,36 @@ public class DailyService {
                 );
 
         List<CommentDto.Response> commentDtoList = saved.getComments()
+                .stream()
+                .map(comment -> CommentDto.Response.build(
+                        comment.getDaily().getId(),
+                        comment.getContent(),
+                        comment.getAuthor(),
+                        comment.getCreatedAt(),
+                        comment.getModifiedAt()
+                ))
+                .toList();
+
+        return DailyDetailResponse.build(
+                saved.getTitle(),
+                saved.getContent(),
+                saved.getAuthor(),
+                saved.getCreatedAt(),
+                saved.getModifiedAt(),
+                commentDtoList
+        );
+    }
+
+    @Transactional(readOnly = true)
+    public DailyDetailResponse findOneWithQuerydsl(long id) {
+        Daily saved = dailyRepository.findByIdWithQuerydsl(id);
+
+        if (saved == null) {
+            throw new ServiceException(ErrorCode.DAILY_NOT_FOUND);
+        }
+
+        List<CommentDto.Response> commentDtoList =
+                dailyRepository.findCommentsByIdQuerydsl(id)
                 .stream()
                 .map(comment -> CommentDto.Response.build(
                         comment.getDaily().getId(),
