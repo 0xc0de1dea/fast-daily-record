@@ -28,6 +28,7 @@ public class DailyService {
     private final DailyRepository dailyRepository;
     private final PasswordEncoder passwordEncoder;
     private final UserRepository userRepository;
+    private final DailyCacheService dailyCacheService;
 
     @Transactional
     public DailyDto.Response create(org.springframework.security.core.userdetails.User user, DailyDto.Request request) {
@@ -83,6 +84,12 @@ public class DailyService {
 
     @Transactional(readOnly = true)
     public DailyDetailResponse findOne(long id) {
+        DailyDetailResponse cached = dailyCacheService.getDailyCache(id);
+
+        if (cached != null) {
+            return cached;
+        }
+
         Daily saved = dailyRepository.findById(id)
                 .orElseThrow(
                         () -> new ServiceException(ErrorCode.DAILY_NOT_FOUND)
@@ -99,7 +106,7 @@ public class DailyService {
                 ))
                 .toList();
 
-        return DailyDetailResponse.build(
+        DailyDetailResponse detail = DailyDetailResponse.build(
                 saved.getTitle(),
                 saved.getContent(),
                 saved.getAuthor(),
@@ -107,10 +114,20 @@ public class DailyService {
                 saved.getModifiedAt(),
                 commentDtoList
         );
+
+        dailyCacheService.saveDailyCache(id, detail);
+
+        return detail;
     }
 
     @Transactional(readOnly = true)
     public DailyDetailResponse findOneWithQuerydsl(long id) {
+        DailyDetailResponse cached = dailyCacheService.getDailyCache(id);
+
+        if (cached != null) {
+            return cached;
+        }
+
         Daily saved = dailyRepository.findByIdWithQuerydsl(id);
 
         if (saved == null) {
@@ -129,7 +146,7 @@ public class DailyService {
                 ))
                 .toList();
 
-        return DailyDetailResponse.build(
+        DailyDetailResponse detail = DailyDetailResponse.build(
                 saved.getTitle(),
                 saved.getContent(),
                 saved.getAuthor(),
@@ -137,6 +154,10 @@ public class DailyService {
                 saved.getModifiedAt(),
                 commentDtoList
         );
+
+        dailyCacheService.saveDailyCache(id, detail);
+
+        return detail;
     }
 
     @Transactional

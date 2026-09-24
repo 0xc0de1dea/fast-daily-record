@@ -18,7 +18,13 @@ import java.util.List;
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Entity
 @Table(
-        name = "dailies"
+        name = "dailies",
+        indexes = {
+                @Index(
+                        name = "idx_daily_modified_at",
+                        columnList = "modified_at"
+                )
+        }
 )
 public class Daily extends BaseEntity {
 

@@ -15,7 +15,13 @@ import org.hibernate.annotations.BatchSize;
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Entity
 @Table(
-        name = "comments"
+        name = "comments",
+        indexes = {
+                @Index(
+                        name = "idx_comment_daily_id",
+                        columnList = "daily_id"
+                )
+        }
 )
 public class Comment extends BaseEntity {
 
