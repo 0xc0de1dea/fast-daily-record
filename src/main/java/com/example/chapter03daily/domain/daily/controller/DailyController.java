@@ -72,4 +72,15 @@ public class DailyController {
         return ResponseEntity.status(HttpStatus.NO_CONTENT)
                 .body(ApiResponse.noContent());
     }
+
+    @PostMapping("/{id}/likes")
+    public ResponseEntity<ApiResponse<Void>> like(
+            @AuthenticationPrincipal User user,
+            @PathVariable Long id
+    ) {
+        dailyService.like(user, id);
+
+        return ResponseEntity.status(HttpStatus.NO_CONTENT)
+                .body(ApiResponse.noContent());
+    }
 }

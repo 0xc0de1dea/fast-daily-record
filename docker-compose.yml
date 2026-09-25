@@ -14,15 +14,31 @@ services:
     networks:
       - spring-net
 
+  redis:
+    image: redis:7
+    container_name: redis-compose
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - spring-net
+    command: redis-server --appendonly yes
+
   spring:
     build: .
     container_name: spring-compose
     depends_on:
       - mysql
+      - redis
     environment:
       SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/nbcam?serverTimezone=Asia/Seoul&characterEncoding=UTF-8
       SPRING_DATASOURCE_USERNAME: root
       SPRING_DATASOURCE_PASSWORD: 1234
+
+      SPRING_DATA_REDIS_HOST: redis
+      SPRING_DATA_REDIS_PORT: 6379
+
     ports:
       - "8080:8080"
     networks:
@@ -30,6 +46,7 @@ services:
 
 volumes:
   mysql_data:
+  redis_data:
 
 networks:
   spring-net:

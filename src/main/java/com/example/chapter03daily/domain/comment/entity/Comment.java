@@ -42,6 +42,12 @@ public class Comment extends BaseEntity {
     @Column(nullable = false, columnDefinition = "TEXT")
     private String password;
 
+    @Column(nullable = true)
+    private Long likes;
+
+    @Version
+    private Long version;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "daily_id", nullable = false)
     private Daily daily;
@@ -50,10 +56,15 @@ public class Comment extends BaseEntity {
         this.content = content;
         this.author = author;
         this.password = password;
+        this.likes = 0L;
         this.daily = daily;
     }
 
     public void update(String content) {
         this.content = content;
+    }
+
+    public void like() {
+        this.likes++;
     }
 }

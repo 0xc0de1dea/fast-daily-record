@@ -6,6 +6,8 @@ import com.example.chapter03daily.domain.comment.dto.CommentDto;
 import com.example.chapter03daily.domain.daily.dto.DailyDetailResponse;
 import com.example.chapter03daily.domain.daily.dto.DailyDto;
 import com.example.chapter03daily.domain.daily.entity.Daily;
+import com.example.chapter03daily.domain.daily.entity.DailyLike;
+import com.example.chapter03daily.domain.daily.repository.DailyLikeRepository;
 import com.example.chapter03daily.domain.daily.repository.DailyRepository;
 import com.example.chapter03daily.domain.user.entity.User;
 import com.example.chapter03daily.domain.user.repository.UserRepository;
@@ -15,6 +17,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 
+import org.springframework.orm.ObjectOptimisticLockingFailureException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -29,6 +32,7 @@ public class DailyService {
     private final PasswordEncoder passwordEncoder;
     private final UserRepository userRepository;
     private final DailyCacheService dailyCacheService;
+    private final DailyLikeRepository dailyLikeRepository;
 
     @Transactional
     public DailyDto.Response create(org.springframework.security.core.userdetails.User user, DailyDto.Request request) {
@@ -47,6 +51,7 @@ public class DailyService {
                 savedDaily.getTitle(),
                 savedDaily.getContent(),
                 savedDaily.getAuthor(),
+                0L,
                 savedDaily.getCreatedAt(),
                 null
         );
@@ -67,6 +72,7 @@ public class DailyService {
                         daily.getTitle(),
                         daily.getContent(),
                         daily.getAuthor(),
+                        daily.getLikes(),
                         daily.getCreatedAt(),
                         daily.getModifiedAt()
                 ));
@@ -95,12 +101,15 @@ public class DailyService {
                         () -> new ServiceException(ErrorCode.DAILY_NOT_FOUND)
                 );
 
+        long countLikes = dailyLikeRepository.countByDailyId(saved.getId());
+
         List<CommentDto.Response> commentDtoList = saved.getComments()
                 .stream()
                 .map(comment -> CommentDto.Response.build(
                         comment.getDaily().getId(),
                         comment.getContent(),
                         comment.getAuthor(),
+                        comment.getLikes(),
                         comment.getCreatedAt(),
                         comment.getModifiedAt()
                 ))
@@ -110,6 +119,7 @@ public class DailyService {
                 saved.getTitle(),
                 saved.getContent(),
                 saved.getAuthor(),
+                countLikes,
                 saved.getCreatedAt(),
                 saved.getModifiedAt(),
                 commentDtoList
@@ -141,6 +151,7 @@ public class DailyService {
                         comment.getDaily().getId(),
                         comment.getContent(),
                         comment.getAuthor(),
+                        comment.getLikes(),
                         comment.getCreatedAt(),
                         comment.getModifiedAt()
                 ))
@@ -150,6 +161,7 @@ public class DailyService {
                 saved.getTitle(),
                 saved.getContent(),
                 saved.getAuthor(),
+                saved.getLikes(),
                 saved.getCreatedAt(),
                 saved.getModifiedAt(),
                 commentDtoList
@@ -190,6 +202,7 @@ public class DailyService {
                 savedDaily.getTitle(),
                 savedDaily.getContent(),
                 savedDaily.getAuthor(),
+                savedDaily.getLikes(),
                 null,
                 savedDaily.getModifiedAt()
         );
@@ -213,5 +226,47 @@ public class DailyService {
         }
 
         dailyRepository.deleteById(id);
+    }
+
+    @Transactional
+    public void like(org.springframework.security.core.userdetails.User user, Long dailyId){
+        String email = user.getUsername();
+
+        User savedUser = userRepository.findUserByEmail(email)
+                .orElseThrow(
+                        () -> new ServiceException(ErrorCode.USER_NOT_FOUND)
+                );
+
+        Daily daily = dailyRepository.findById(dailyId)
+                .orElseThrow(() ->
+                        new ServiceException(ErrorCode.DAILY_NOT_FOUND)
+                );
+
+        if (dailyLikeRepository.existsByDailyIdAndUserId(daily.getId(), savedUser.getId())) {
+            throw new ServiceException(ErrorCode.ALREADY_LIKED);
+        }
+
+        DailyLike dailyLike = new DailyLike(daily, savedUser);
+
+        dailyLikeRepository.save(dailyLike);
+
+        int retry = 0;
+
+        while (retry < 10) {
+            try {
+                daily.like();
+                return;
+            } catch (ObjectOptimisticLockingFailureException e) {
+                retry++;
+
+                try {
+                    Thread.sleep(10);
+                } catch (InterruptedException ex) {
+                    throw new RuntimeException(ex);
+                }
+            }
+        }
+
+        throw new IllegalArgumentException("좋아요에 실패하였습니다.");
     }
 }

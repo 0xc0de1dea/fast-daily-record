@@ -13,7 +13,7 @@ import java.util.List;
 
 @Getter
 @JsonInclude(JsonInclude.Include.NON_NULL)
-@JsonPropertyOrder({"title", "content", "author", "createdAt", "modifiedAt", "comments"})
+@JsonPropertyOrder({"title", "content", "author", "likes", "createdAt", "modifiedAt", "comments"})
 public class DailyDetailResponse extends DailyDto.Response {
 
     private List<CommentDto.Response> comments;
@@ -23,11 +23,12 @@ public class DailyDetailResponse extends DailyDto.Response {
             String title,
             String content,
             String author,
+            Long likes,
             LocalDateTime createdAt,
             LocalDateTime modifiedAt,
             List<CommentDto.Response> comments
     ) {
-        super(title, content, author, createdAt, modifiedAt);
+        super(title, content, author, likes, createdAt, modifiedAt);
         this.comments = comments;
     }
 
@@ -35,6 +36,7 @@ public class DailyDetailResponse extends DailyDto.Response {
             String title,
             String content,
             String author,
+            Long likes,
             LocalDateTime createdAt,
             LocalDateTime modifiedAt,
             List<CommentDto.Response> comments
@@ -43,6 +45,7 @@ public class DailyDetailResponse extends DailyDto.Response {
                 .title(title)
                 .content(content)
                 .author(author)
+                .likes(likes)
                 .createdAt(createdAt)
                 .modifiedAt(modifiedAt)
                 .comments(comments)

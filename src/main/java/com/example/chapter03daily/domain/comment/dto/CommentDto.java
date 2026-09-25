@@ -33,18 +33,21 @@ public class CommentDto {
 
         private String author;
 
+        private Long likes;
+
         private LocalDateTime createdAt;
 
         private LocalDateTime modifiedAt;
 
         public static Response build(
-                Long dailyId, String content, String author,
+                Long dailyId, String content, String author, Long likes,
                 LocalDateTime createdAt, LocalDateTime modifiedAt
         ) {
             return Response.builder()
                     .dailyId(dailyId)
                     .content(content)
                     .author(author)
+                    .likes(likes)
                     .createdAt(createdAt)
                     .modifiedAt(modifiedAt)
                     .build();

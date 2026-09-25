@@ -43,6 +43,7 @@ public class JwtFilter extends OncePerRequestFilter {
         if (!jwtUtil.validateToken(jwt)) {
             response.setStatus(HttpServletResponse.SC_FORBIDDEN);
             response.getWriter().write("{\"error\": \"Unauthorized\"}");
+            return;
         }
 
         String email = jwtUtil.extractEmail(jwt);

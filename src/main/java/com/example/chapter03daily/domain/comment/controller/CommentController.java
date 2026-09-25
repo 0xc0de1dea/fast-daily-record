@@ -23,7 +23,7 @@ public class CommentController {
     @PostMapping("/{id}")
     public ResponseEntity<ApiResponse<CommentDto.Response>> create(
             @AuthenticationPrincipal User user,
-            @PathVariable long id,
+            @PathVariable Long id,
             @Valid @RequestBody CommentDto.Request request
     ) {
         return ResponseEntity.status(HttpStatus.CREATED)
@@ -32,7 +32,7 @@ public class CommentController {
 
     @GetMapping("/{id}")
     public ResponseEntity<ApiResponse<List<CommentDto.Response>>> findAll(
-            @PathVariable long id
+            @PathVariable Long id
     ) {
         return ResponseEntity.status(HttpStatus.OK)
                 .body(ApiResponse.ok(commentService.findAll(id)));
@@ -41,7 +41,7 @@ public class CommentController {
     @PatchMapping("/{id}")
     public ResponseEntity<ApiResponse<CommentDto.Response>> update(
             @AuthenticationPrincipal User user,
-            @PathVariable long id,
+            @PathVariable Long id,
             @Valid @RequestBody CommentDto.Request request
     ) {
         return ResponseEntity.status(HttpStatus.OK)
@@ -51,10 +51,21 @@ public class CommentController {
     @DeleteMapping("/{id}")
     public ResponseEntity<ApiResponse<Void>> delete(
             @AuthenticationPrincipal User user,
-            @PathVariable long id,
+            @PathVariable Long id,
             @Valid @RequestBody CommentDto.Request request
     ) {
         commentService.delete(user, id, request);
+
+        return ResponseEntity.status(HttpStatus.NO_CONTENT)
+                .body(ApiResponse.noContent());
+    }
+
+    @PostMapping("/{id}/likes")
+    public ResponseEntity<ApiResponse<Void>> like(
+            @AuthenticationPrincipal User user,
+            @PathVariable Long id
+    ) {
+        commentService.like(user, id);
 
         return ResponseEntity.status(HttpStatus.NO_CONTENT)
                 .body(ApiResponse.noContent());

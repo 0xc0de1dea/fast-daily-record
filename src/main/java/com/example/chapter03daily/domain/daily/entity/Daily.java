@@ -50,6 +50,12 @@ public class Daily extends BaseEntity {
     @Column(nullable = false, columnDefinition = "TEXT")
     private String password;
 
+    @Column(nullable = true)
+    private Long likes;
+
+    @Version
+    private Long version;
+
     @OneToMany(
             mappedBy = "daily",
             cascade = CascadeType.ALL,
@@ -62,6 +68,7 @@ public class Daily extends BaseEntity {
         this.content = content;
         this.author = author;
         this.password = password;
+        this.likes = 0L;
     }
 
     public void update(
@@ -69,5 +76,9 @@ public class Daily extends BaseEntity {
     ) {
         this.title = title == null ? this.title : title;
         this.content = content == null ? this.content : content;
+    }
+
+    public void like() {
+        this.likes++;
     }
 }

@@ -46,6 +46,7 @@ public class DailyCustomRepositoryImpl implements DailyCustomRepository {
                                 daily.title,
                                 daily.content,
                                 daily.author,
+                                daily.likes,
                                 daily.createdAt,
                                 daily.modifiedAt
                         )

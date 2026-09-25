@@ -4,12 +4,15 @@ import com.example.chapter03daily.common.exception.ErrorCode;
 import com.example.chapter03daily.common.exception.ServiceException;
 import com.example.chapter03daily.domain.comment.dto.CommentDto;
 import com.example.chapter03daily.domain.comment.entity.Comment;
+import com.example.chapter03daily.domain.comment.entity.CommentLike;
+import com.example.chapter03daily.domain.comment.repository.CommentLikeRepository;
 import com.example.chapter03daily.domain.comment.repository.CommentRepository;
 import com.example.chapter03daily.domain.daily.entity.Daily;
 import com.example.chapter03daily.domain.daily.repository.DailyRepository;
 import com.example.chapter03daily.domain.user.entity.User;
 import com.example.chapter03daily.domain.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.orm.ObjectOptimisticLockingFailureException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -24,9 +27,10 @@ public class CommentService {
     private final DailyRepository dailyRepository;
     private final PasswordEncoder passwordEncoder;
     private final UserRepository userRepository;
+    private final CommentLikeRepository commentLikeRepository;
 
     @Transactional
-    public CommentDto.Response create(org.springframework.security.core.userdetails.User user, long id, CommentDto.Request request) {
+    public CommentDto.Response create(org.springframework.security.core.userdetails.User user, Long id, CommentDto.Request request) {
         String email = user.getUsername();
 
         Daily daily = dailyRepository.findById(id)
@@ -53,13 +57,14 @@ public class CommentService {
                 daily.getId(),
                 comment.getContent(),
                 comment.getAuthor(),
+                0L,
                 comment.getCreatedAt(),
                 null
         );
     }
 
     @Transactional(readOnly = true)
-    public List<CommentDto.Response> findAll(long id) {
+    public List<CommentDto.Response> findAll(Long id) {
         Daily daily = dailyRepository.findById(id)
                 .orElseThrow(
                         () -> new ServiceException(ErrorCode.DAILY_NOT_FOUND)
@@ -73,6 +78,7 @@ public class CommentService {
                         comment.getDaily().getId(),
                         comment.getContent(),
                         comment.getAuthor(),
+                        comment.getLikes(),
                         comment.getCreatedAt(),
                         comment.getModifiedAt()
                 ))
@@ -80,7 +86,7 @@ public class CommentService {
     }
 
     @Transactional
-    public CommentDto.Response update(org.springframework.security.core.userdetails.User user, long id, CommentDto.Request request) {
+    public CommentDto.Response update(org.springframework.security.core.userdetails.User user, Long id, CommentDto.Request request) {
         String email = user.getUsername();
 
         User savedUser = userRepository.findUserByEmail(email)
@@ -107,13 +113,14 @@ public class CommentService {
                 savedComment.getDaily().getId(),
                 savedComment.getContent(),
                 savedComment.getAuthor(),
+                savedComment.getLikes(),
                 savedComment.getCreatedAt(),
                 savedComment.getModifiedAt()
         );
     }
 
     @Transactional
-    public void delete(org.springframework.security.core.userdetails.User user, long id, CommentDto.Request request) {
+    public void delete(org.springframework.security.core.userdetails.User user, Long id, CommentDto.Request request) {
         String email = user.getUsername();
 
         User savedUser = userRepository.findUserByEmail(email)
@@ -135,5 +142,47 @@ public class CommentService {
         }
 
         commentRepository.deleteById(id);
+    }
+
+    @Transactional
+    public void like(org.springframework.security.core.userdetails.User user, Long commentId) {
+        String email = user.getUsername();
+
+        User savedUser = userRepository.findUserByEmail(email)
+                .orElseThrow(
+                        () -> new ServiceException(ErrorCode.USER_NOT_FOUND)
+                );
+
+        Comment savedComment = commentRepository.findById(commentId)
+                .orElseThrow(
+                        () -> new ServiceException(ErrorCode.COMMENT_NOT_FOUND)
+                );
+
+        if (commentLikeRepository.existsByCommentIdAndUserId(savedComment.getId(), savedUser.getId())) {
+            throw new ServiceException(ErrorCode.ALREADY_LIKED);
+        }
+
+        CommentLike commentLike = new CommentLike(savedComment, savedUser);
+
+        commentLikeRepository.save(commentLike);
+
+        int retry = 0;
+
+        while (retry < 10) {
+            try {
+                savedComment.like();
+                return;
+            } catch (ObjectOptimisticLockingFailureException e) {
+                retry++;
+
+                try {
+                    Thread.sleep(10);
+                } catch (InterruptedException ex) {
+                    throw new RuntimeException(ex);
+                }
+            }
+        }
+
+        throw new IllegalArgumentException("좋아요에 실패하였습니다.");
     }
 }
